@@ -1,0 +1,213 @@
+---
+title: "Data Science Capstone Project - Milestone Report"
+author: "Sapna Giri"
+date: "7 August 2017"
+output: html_document
+---
+
+
+### Loading required packages
+```{r load_library, echo=TRUE,message=FALSE, warning=FALSE}
+library(quanteda)
+library(wordcloud)
+library(dplyr)
+library(tidyr)
+library(knitr)
+library(ggplot2)
+```
+  
+### Reading the data
+```{r read_files, cache=TRUE, warning=FALSE}
+con <- file("en_US/en_US.blogs.txt","r")
+text_blog <- readLines(con)
+close(con)
+
+con <- file("en_US/en_US.twitter.txt","r")
+text_twitter <- readLines(con)
+close(con)
+
+con <- file("en_US/en_US.news.txt","r")
+text_news <- readLines(con)
+close(con)
+```
+
+
+### Exploring the data
+```{r explore_files, echo=FALSE, cache=FALSE}
+len_blog <- length(text_blog)
+len_twitter <- length(text_twitter)
+len_news <- length(text_news)
+
+class_blog <- class(text_blog)
+class_twitter <- class(text_twitter)
+class_news <- class(text_news)
+
+maxline_blog <- max(nchar(text_blog))
+maxline_twitter <- max(nchar(text_twitter))
+maxline_news <- max(nchar(text_news))
+
+text_details <- data.frame(TextFile=c('en_US.blogs.txt','en_US.twitter.txt','en_US.news.txt'),
+                           Class = c(class_blog, class_twitter, class_news),
+                           FileLength = c(len_blog, len_twitter, len_news),
+                           LongestLine = c(maxline_blog, maxline_twitter, maxline_news))
+
+```
+
+```{r display_file_props, echo=FALSE}
+kable(text_details, caption = 'Table showing details of the text files')
+```
+  
+As can be seen from the above table, data from all the three text files is imported as character data. Blog data has a little less than 1 million lines, twitter has about 2 million lines and the news data about 1 million. Also you can see the number of characters contained in the longest line in each of the files.
+  
+Lets see at the first line in blogs file to see how the data looks like.
+```{r display_line}
+text_blog[1]
+```
+  
+### Sampling the data
+Since we have three files to be used as our training data and each file has a lot of lines, it would be sufficient if we just take a sample of the data (1% from each file) from each of the files and combine the samples to form our training data.
+  
+This is done in the code below.
+  
+```{r sample_text, cache=FALSE}
+set.seed(1234)
+sample_blog <- sample(text_blog, size = (0.01 * len_blog))
+sample_twitter <- sample(text_twitter, size = (0.01*len_twitter))
+sample_news <- sample(text_news, size = (0.01* len_news))
+
+all_text <- c(sample_blog, sample_twitter, sample_news)
+onetext <- paste(all_text, collapse = '')
+```
+
+```{r clean1, echo=FALSE}
+rm(text_blog); rm(text_twitter); rm(text_news)
+rm(all_text); rm(sample_blog); rm(sample_twitter); rm(sample_news)
+```
+
+
+### Cleaning the data
+For further analysis of the text we need to clean it first. This would include converting all the text to lower case, removing any numbers, special characters, punctuations etc. For profanity filtering we only remove the seven dirty words as given by wikipedia.
+This is done below.
+  
+```{r corpus, cache=FALSE}
+onetext <- gsub("[^a-zA-Z ]","",onetext)
+onetext <- tolower(onetext)
+mycorpus <- corpus(onetext)
+
+SevenDirtyWords <- c('shit','piss','fuck','cunt','cocksucker','motherfucker','tits')
+```
+  
+```{r clean2, echo=FALSE}
+rm(onetext)
+```
+
+
+## N-Grams
+Now that the data is cleaned up we shall do some more analysis on the text by converting it into unigrams, bigrams and trigrams and check which are the most frequently occuring words, pair of words etc. in the text.
+ 
+ 
+###UNIGRAMS
+```{r unigram, cache=FALSE}
+dfm.unigram = dfm(mycorpus, 
+                  ngrams=1, concatenator=" ", 
+                  remove = SevenDirtyWords)
+
+df.unigram <- data.frame(words = featnames(dfm.unigram), count = colSums(dfm.unigram), 
+                 row.names = NULL, stringsAsFactors = FALSE)
+
+df.unigram <- arrange(df.unigram, desc(count))
+head(df.unigram)
+```
+  
+```{r clean3, echo=FALSE}
+rm(dfm.unigram)
+```
+
+
+```{r unigram_barplot}
+p=ggplot(data=df.unigram[1:15,])  
+p+geom_bar(stat="identity")+  
+aes(x=reorder(words,-count,sum),y=count)+
+ggtitle("Top 15 unigrams") + xlab("unigram") + ylab("count")
+```
+  
+**UNIGRAM CLOUD**
+```{r unigram_cloud, warning=FALSE, eval=TRUE}
+set.seed(1234)
+wordcloud(words = df.unigram$words, freq = df.unigram$count, min.freq = 1,
+          max.words=200, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+
+  
+### BIGRAMS
+```{r bigram, cache=FALSE, eval=TRUE}
+dfm.bigram = dfm(mycorpus, 
+                  ngrams=2, concatenator=" ", 
+                  remove = SevenDirtyWords)
+
+df.bigram <- data.frame(words = featnames(dfm.bigram), count = colSums(dfm.bigram), 
+                 row.names = NULL, stringsAsFactors = FALSE)
+
+df.bigram <- arrange(df.bigram, desc(count))
+head(df.bigram)
+```
+  
+```{r clean4, echo=FALSE}
+rm(dfm.bigram)
+```
+  
+```{r bigram_barplot}
+p=ggplot(data=df.bigram[1:15,])  
+p+geom_bar(stat="identity")+  
+aes(x=reorder(words,-count,sum),y=count)+
+ggtitle("Top 15 bigrams") + xlab("bigram") + ylab("count")
+```
+  
+**BIGRAM CLOUD**
+```{r bigram_cloud, warning=FALSE, eval=TRUE}
+set.seed(1234)
+wordcloud(words = df.bigram$words, freq = df.bigram$count, min.freq = 1,
+          max.words=50, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+
+  
+### TRIGRAMS
+```{r trigram, cache=FALSE,eval=TRUE}
+dfm.trigram = dfm(mycorpus, 
+                  ngrams=3, concatenator=" ", 
+                  remove = SevenDirtyWords)
+
+df.trigram <- data.frame(words = featnames(dfm.trigram), count = colSums(dfm.trigram), 
+                 row.names = NULL, stringsAsFactors = FALSE)
+
+df.trigram <- arrange(df.trigram, desc(count))
+head(df.trigram)
+```
+  
+```{r clean5, echo=FALSE}
+rm(dfm.trigram)
+```
+  
+```{r trigram_barplot}
+p=ggplot(data=df.trigram[1:15,])  
+p+geom_bar(stat="identity")+  
+aes(x=reorder(words,-count,sum),y=count)+
+ggtitle("Top 15 trigrams") + xlab("trigram") + ylab("count")
+```
+  
+  
+**TRIGRAM CLOUD**
+```{r trigram_cloud, warning=FALSE,eval=TRUE}
+set.seed(1234)
+wordcloud(words = df.trigram$words, freq = df.trigram$count, min.freq = 1,
+          max.words=50, random.order=FALSE, rot.per=0.35, 
+          colors=brewer.pal(8, "Dark2"))
+```
+  
+  
+##Further Activity
+1 To build a text prediction model using the n-grams.  
+2 To create a shiny app which takes as input a word or phrase and predicts the next likely word.
