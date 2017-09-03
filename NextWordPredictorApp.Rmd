@@ -1,0 +1,49 @@
+---
+title: "NextWordPredictorApp"
+author: "Sapna Giri"
+date: "3 September 2017"
+output: ioslides_presentation
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+## About - The Project and The App
+
+This project was taken up as part of course 10 of the Data Science Specialization on Coursera.  
+
+The App "Next Word Predictor" takes a word or phrase as input from the user and tries to guess the next word that might follow the input phrase meaningfully.  
+
+The app has been deployed on the Shinyapps.io server hosted by RStudio thus making it available for anyone and everyone to try it out. 
+
+Shiny App Link  : https://sapnagiri.shinyapps.io/nextwordpredictor/
+
+
+## Algorithm
+
+- To develop this app a corpus of text was required which could be used for training the algorithm to predict next word.  
+- Link to training data : https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip  
+- The entire data in US_EN folder has been used. 
+- The training data was first cleaned and filtered to remove any special characters, completely transferred to lower case and converted into n-grams where n=1,2,3 and 4.
+- The n-grams were converted into a dataframe containg the n-gram and the count of the n-gram in the entire text corpus.
+- Each type of n-gram dataframe was stored in a separate RData file to be used by the prediction function to predict the next word.
+
+
+## Working of the App
+
+```{r}
+knitr::include_graphics("./NextWordPredictorAppScreenshot.png")
+```
+
+
+## Working of the App (contd...)
+1. Launch the app.
+2. Enter some text in the textbox and click on 'Predict'.
+3. The app will display a list of top 3 words suitable as the next word for the phrase.
+4. If no text is entered on clicking of Predict, then a message "Please enter some text" is displayed.
+5. If no prediction possible, then the top 3 words in the corpus are displayed randomly.
+  
+  
+## THANK YOU
+
